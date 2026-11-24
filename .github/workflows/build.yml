@@ -14,7 +14,7 @@ jobs:
         shell: powershell
         run: |
           $csc = "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
-          & $csc /nologo /codepage:65001 /target:winexe /reference:Microsoft.CSharp.dll /reference:System.Windows.Forms.dll /out:WordPdfConverter.exe Converter.cs
+          & $csc /nologo /codepage:65001 /target:winexe /reference:Microsoft.CSharp.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /out:WordPdfConverter.exe Converter.cs
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Compile installer
         shell: powershell
@@ -30,7 +30,7 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
-          $p = Start-Process "$pwd\dist\DOCX-to-PDF-Setup-2.1.0-beta.2.exe" -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART' -Wait -PassThru
+          $p = Start-Process "$pwd\dist\DOCX-to-PDF-Setup-2.1.0-beta.3.exe" -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART' -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw 'Install failed' }
           $app = Join-Path $env:ProgramFiles 'DOCX to PDF Converter\WordPdfConverter.exe'
           if ((Get-FileHash $app).Hash -ne (Get-FileHash .\WordPdfConverter.exe).Hash) { throw 'Hash mismatch' }
@@ -44,6 +44,6 @@ jobs:
           if ($p.ExitCode -ne 0) { throw 'Self test failed' }
       - uses: actions/upload-artifact@v4
         with:
-          name: DOCX-to-PDF-Setup-2.1.0-beta.2
-          path: dist/DOCX-to-PDF-Setup-2.1.0-beta.2.exe
+          name: DOCX-to-PDF-Setup-2.1.0-beta.3
+          path: dist/DOCX-to-PDF-Setup-2.1.0-beta.3.exe
           if-no-files-found: error
