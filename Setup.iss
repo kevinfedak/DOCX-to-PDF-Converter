@@ -3,7 +3,7 @@ AppId=LocalDocxToPdfConverter
 AppName=DOCX to PDF Converter
 AppPublisher=Kevin Fedak
 VersionInfoCompany=Kevin Fedak
-AppVersion=1.0.2
+AppVersion=1.0.3
 DefaultDirName={autopf}\DOCX to PDF Converter
 DisableProgramGroupPage=yes
 PrivilegesRequired=admin
@@ -15,8 +15,6 @@ SolidCompression=yes
 UninstallDisplayName=DOCX to PDF Converter
 
 [Files]
-Source: "ConvertToPDF.ps1"; DestDir: "{app}"; Flags: ignoreversion
-
 Source: "Launcher.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Registry]
