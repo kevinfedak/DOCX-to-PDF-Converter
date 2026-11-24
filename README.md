@@ -6,4 +6,4 @@ Download the test installer from the successful GitHub Actions run's artifacts. 
 
 The build checks installation, registry commands and input validation. The hosted CI runner does not include Word, so actual document conversion, formatting, password-protected documents and Word dialogs still need a manual test on a Windows machine with Word installed. Use copies of representative documents for the beta test.
 
-Explorer starts a separate converter process for each selected file. Conversions run one at a time in a shared progress window, which lists successes and errors. Larger selections can be converted in batches of up to 15. The installer is not digitally signed; Windows will show an unknown publisher until it is signed with a trusted code-signing certificate.
+Explorer starts a separate converter process for each selected file. Conversions run one at a time in a shared Word session and progress window, which lists successes and errors. Larger selections can be converted in batches of up to 15. The installer is not digitally signed; Windows will show an unknown publisher until it is signed with a trusted code-signing certificate.
