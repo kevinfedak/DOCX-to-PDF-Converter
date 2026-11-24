@@ -8,8 +8,8 @@ using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 
-[assembly: System.Reflection.AssemblyVersion("2.1.1.0")]
-[assembly: System.Reflection.AssemblyFileVersion("2.1.1.0")]
+[assembly: System.Reflection.AssemblyVersion("2.1.2.0")]
+[assembly: System.Reflection.AssemblyFileVersion("2.1.2.0")]
 internal static class Converter
 {
     private static readonly string QueuePath = Path.Combine(Path.GetTempPath(), "KevinWordPdf-queue.txt");
@@ -136,9 +136,11 @@ internal static class Converter
                         if (doc != null) { try { doc.Close(0); } catch {} }
                         Release((object)doc);
                     }
-                } catch {
+                } catch (Exception error) {
                     // A failed Word operation may leave COM in an unusable state.
-                    Reset();
+                    string cleanupError = Reset();
+                    if (cleanupError != null)
+                        throw new InvalidOperationException(error.Message + "\nNie udało się zamknąć Worda: " + cleanupError, error);
                     throw;
                 }
                 File.Move(temp, target);
@@ -147,11 +149,16 @@ internal static class Converter
             }
         }
 
-        private void Reset()
+        internal string Reset()
         {
-            if (word != null) { try { word.Quit(0); } catch {} }
-            Release((object)docs); Release((object)options); Release((object)word);
-            docs = null; options = null; word = null;
+            // Release child COM references before asking our Word instance to quit.
+            Release((object)docs); Release((object)options);
+            docs = null; options = null;
+            string error = null;
+            if (word != null) { try { word.Quit(0); } catch (Exception ex) { error = ex.Message; } }
+            Release((object)word);
+            word = null;
+            return error;
         }
 
         public void Dispose()
@@ -171,8 +178,9 @@ internal static class Converter
         public TestOptions Options { get; private set; }
         public TestDocuments Documents { get; private set; }
         public bool WasQuit { get; private set; }
+        public bool FailQuit { get; set; }
         public TestWord(bool fail) { Options = new TestOptions(); Documents = new TestDocuments(fail); }
-        public void Quit(int save) { WasQuit = true; }
+        public void Quit(int save) { WasQuit = true; if (FailQuit) throw new InvalidOperationException("Simulated quit error"); }
     }
     public sealed class TestOptions { public bool UpdateLinksAtOpen { get; set; } }
     public sealed class TestDocuments
@@ -207,7 +215,8 @@ internal static class Converter
         private readonly BlockingCollection<string> work = new BlockingCollection<string>();
         private readonly Thread worker;
         private int total, completed, errors;
-        private bool working;
+        private bool working, needsCleanup;
+        private string cleanupError;
         private DateTime lastArrival = DateTime.UtcNow;
 
         internal ProgressWindow()
@@ -239,8 +248,15 @@ internal static class Converter
                     total += added.Count; lastArrival = DateTime.UtcNow; close.Enabled = false;
                 }
                 if (!working && pending.Count > 0 && (DateTime.UtcNow - lastArrival).TotalSeconds >= 1.5) StartNext();
-                if (!working && pending.Count == 0 && total > 0) {
+                if (!working && pending.Count == 0 && total > 0 && needsCleanup && (DateTime.UtcNow - lastArrival).TotalSeconds >= 1.5) {
+                    working = true; needsCleanup = false;
+                    status.Text = "Zamykanie sesji Worda...";
+                    current.Text = "";
+                    work.Add(""); // Cleanup runs on the same STA thread as Word.
+                }
+                if (!working && pending.Count == 0 && total > 0 && !needsCleanup) {
                     status.Text = errors == 0 ? "Ukończono: " + completed + " z " + total + " dokumentów." : "Ukończono: " + (completed - errors) + " z " + total + "; błędy: " + errors + ".";
+                    if (cleanupError != null) status.Text += " Nie udało się zamknąć Worda.";
                     current.Text = ""; bar.Maximum = total; bar.Value = completed; close.Enabled = true;
                 }
             } catch (Exception ex) { timer.Stop(); MessageBox.Show(ex.Message, "Błąd kolejki", MessageBoxButtons.OK, MessageBoxIcon.Error); close.Enabled = true; }
@@ -258,12 +274,23 @@ internal static class Converter
         {
             using (WordSession session = new WordSession()) {
                 foreach (string file in work.GetConsumingEnumerable()) {
+                    if (file.Length == 0) {
+                        string resetError = session.Reset();
+                        BeginInvoke((Action)delegate {
+                            if (resetError != null) {
+                                cleanupError = resetError;
+                                details.AppendText("Nie udało się zamknąć sesji Worda: " + resetError + Environment.NewLine);
+                            }
+                            working = false;
+                        });
+                        continue;
+                    }
                     string error = null;
                     try { session.ConvertFile(file); }
                     catch (Exception ex) { error = ex.Message; }
                     string result = error;
                     BeginInvoke((Action)delegate {
-                        completed++; working = false;
+                        completed++; needsCleanup = true; working = false;
                         if (result != null) { errors++; details.AppendText(Path.GetFileName(file) + ": " + result + Environment.NewLine); }
                         else details.AppendText(Path.GetFileName(file) + ": gotowe" + Environment.NewLine);
                     });
@@ -314,8 +341,13 @@ internal static class Converter
             if (instances.Count != 2 || instances[1].WasQuit) return 1;
             session.ConvertFile(three);
             if (instances.Count != 2 || !File.Exists(Path.ChangeExtension(three, ".pdf"))) return 1;
+            if (session.Reset() != null || !instances[1].WasQuit) return 1;
+            string four = Path.Combine(dir, "four.docx"); File.WriteAllText(four, "test");
+            session.ConvertFile(four);
+            if (instances.Count != 3 || !File.Exists(Path.ChangeExtension(four, ".pdf"))) return 1;
+            instances[2].FailQuit = true;
+            if (session.Reset() == null || !instances[2].WasQuit) return 1;
             session.Dispose(); session.Dispose();
-            if (!instances[1].WasQuit) return 1;
             try { session.ConvertFile(one); return 1; } catch (ObjectDisposedException) { }
             return 0;
         } catch { return 1; }

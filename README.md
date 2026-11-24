@@ -4,11 +4,11 @@ A Windows context-menu utility for converting Word documents to PDF using Micros
 
 ## Installation
 
-Download `DOCX-to-PDF-Setup-2.1.1.exe` from the [latest release](https://github.com/kevinfedak/DOCX-to-PDF-Converter/releases/latest) and run it. Installation requires administrator rights and desktop Microsoft Word for Windows. The installer updates earlier versions. It is not digitally signed, so Windows displays an unknown publisher warning.
+Download `DOCX-to-PDF-Setup-2.1.2.exe` from the [latest release](https://github.com/kevinfedak/DOCX-to-PDF-Converter/releases/latest) and run it. Installation requires administrator rights and desktop Microsoft Word for Windows. The installer updates earlier versions. It is not digitally signed, so Windows displays an unknown publisher warning.
 
 ## Use
 
-Select up to 15 DOC or DOCX files in Explorer, right-click and choose **Konwertuj do PDF**. On Windows 11, the command may appear under **Show more options**. Files are processed sequentially in one Word session; the progress window shows results and errors. PDFs are saved next to their source documents. Existing PDFs are never overwritten.
+Select DOC or DOCX files in Explorer, right-click and choose **Konwertuj do PDF**. On Windows 11, the command may appear under **Show more options**. Explorer normally supports up to 100 selected files for this menu entry. Files are processed sequentially in one Word session; the progress window shows results and errors. PDFs are saved next to their source documents. Existing PDFs are never overwritten.
 
 Uninstall the converter through Windows installed apps.
 
