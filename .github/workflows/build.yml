@@ -1,7 +1,8 @@
 name: Build installer
 on:
   push:
-    branches: [main]
+    branches: [main, "test/**"]
+  pull_request:
   workflow_dispatch:
 permissions:
   contents: read
@@ -14,7 +15,7 @@ jobs:
         shell: powershell
         run: |
           $csc = "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
-          & $csc /nologo /codepage:65001 /target:winexe /reference:Microsoft.CSharp.dll /reference:System.Windows.Forms.dll /out:WordPdfConverter.exe Converter.cs
+          & $csc /nologo /codepage:65001 /target:winexe /win32icon:assets\converter.ico /reference:Microsoft.CSharp.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /out:WordPdfConverter.exe Converter.cs
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Compile installer
         shell: powershell
@@ -30,19 +31,22 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
-          $p = Start-Process "$pwd\dist\DOCX-to-PDF-Setup-2.0.0.exe" -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART' -Wait -PassThru
+          $p = Start-Process "$pwd\dist\DOCX-to-PDF-Setup-2.1.0.exe" -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART' -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw 'Install failed' }
           $app = Join-Path $env:ProgramFiles 'DOCX to PDF Converter\WordPdfConverter.exe'
           if ((Get-FileHash $app).Hash -ne (Get-FileHash .\WordPdfConverter.exe).Hash) { throw 'Hash mismatch' }
           foreach ($ext in '.doc','.docx') {
             $key = "Registry::HKEY_LOCAL_MACHINE\Software\Classes\SystemFileAssociations\$ext\shell"
             if ((Get-Item "$key\KevinWordPdf\command").GetValue('') -ne ('"' + $app + '" "%1"')) { throw 'Wrong command' }
+            if ((Get-Item "$key\KevinWordPdf").GetValue('') -ne "Konwertuj do PDF") { throw "Wrong menu label" }
+            if ((Get-Item "$key\KevinWordPdf").GetValue("Icon") -ne ($app + ",0")) { throw "Wrong menu icon" }
+            if ((Get-Item "$key\KevinWordPdf").GetValue("MultiSelectModel") -ne "Document") { throw "Wrong selection model" }
             if (Test-Path "$key\LocalDocxToPdf") { throw 'Legacy entry remains' }
           }
           $p = Start-Process $app -ArgumentList '--self-test' -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw 'Self test failed' }
       - uses: actions/upload-artifact@v4
         with:
-          name: DOCX-to-PDF-Setup-2.0.0
-          path: dist/DOCX-to-PDF-Setup-2.0.0.exe
+          name: DOCX-to-PDF-Setup-2.1.0
+          path: dist/DOCX-to-PDF-Setup-2.1.0.exe
           if-no-files-found: error
