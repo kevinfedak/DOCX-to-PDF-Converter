@@ -16,3 +16,5 @@ Silent install: `DOCX-to-PDF-Setup.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART`
 - Uninstall and verify menu and installed files are removed.
 
 CI validates PowerShell syntax and compiles the installer; it does not test Word COM.
+
+Version 1.0.2 uses a GUI launcher to start PowerShell without a console window. Error dialogs remain visible. Verify on Windows 11 with Windows Terminal as the default terminal.
