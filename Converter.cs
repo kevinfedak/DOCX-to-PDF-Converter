@@ -8,8 +8,8 @@ using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 
-[assembly: System.Reflection.AssemblyVersion("2.1.0.0")]
-[assembly: System.Reflection.AssemblyFileVersion("2.1.0.0")]
+[assembly: System.Reflection.AssemblyVersion("2.1.1.0")]
+[assembly: System.Reflection.AssemblyFileVersion("2.1.1.0")]
 internal static class Converter
 {
     private static readonly string QueuePath = Path.Combine(Path.GetTempPath(), "KevinWordPdf-queue.txt");
@@ -91,13 +91,23 @@ internal static class Converter
     private sealed class WordSession : IDisposable
     {
         private dynamic word, docs, options;
+        private readonly Func<object> factory;
+        private bool disposed;
+
+        internal WordSession() : this(CreateWord) { }
+        internal WordSession(Func<object> factory) { this.factory = factory; }
+
+        private static object CreateWord()
+        {
+            Type type = Type.GetTypeFromProgID("Word.Application");
+            if (type == null) throw new InvalidOperationException("Wymagany jest zainstalowany Microsoft Word dla systemu Windows.");
+            return Activator.CreateInstance(type);
+        }
 
         private void Start()
         {
             if (word != null) return;
-            Type type = Type.GetTypeFromProgID("Word.Application");
-            if (type == null) throw new InvalidOperationException("Wymagany jest zainstalowany Microsoft Word dla systemu Windows.");
-            word = Activator.CreateInstance(type);
+            word = factory();
             word.Visible = false;
             word.DisplayAlerts = 0;
             word.AutomationSecurity = 3;
@@ -108,31 +118,81 @@ internal static class Converter
 
         internal void ConvertFile(string input)
         {
-            dynamic doc = null;
-            string temp = null;
+            if (disposed) throw new ObjectDisposedException("WordSession");
+            // Validation failures do not affect the Word session.
+            string target = GetTarget(new[] { input });
+            string file = Path.GetFullPath(input);
+            string temp = Path.Combine(Path.GetDirectoryName(file), Guid.NewGuid().ToString() + ".pdf");
             try {
-                string target = GetTarget(new[] { input });
-                string file = Path.GetFullPath(input);
-                temp = Path.Combine(Path.GetDirectoryName(file), Guid.NewGuid().ToString() + ".pdf");
-                Start();
-                doc = docs.Open(FileName: file, ConfirmConversions: false, ReadOnly: true,
-                    AddToRecentFiles: false, PasswordDocument: Guid.NewGuid().ToString(),
-                    Revert: false, Visible: false, OpenAndRepair: false, NoEncodingDialog: true);
-                doc.ExportAsFixedFormat(temp, 17);
+                try {
+                    dynamic doc = null;
+                    try {
+                        Start();
+                        doc = docs.Open(FileName: file, ConfirmConversions: false, ReadOnly: true,
+                            AddToRecentFiles: false, PasswordDocument: Guid.NewGuid().ToString(),
+                            Revert: false, Visible: false, OpenAndRepair: false, NoEncodingDialog: true);
+                        doc.ExportAsFixedFormat(temp, 17);
+                    } finally {
+                        if (doc != null) { try { doc.Close(0); } catch {} }
+                        Release((object)doc);
+                    }
+                } catch {
+                    // A failed Word operation may leave COM in an unusable state.
+                    Reset();
+                    throw;
+                }
                 File.Move(temp, target);
             } finally {
-                if (doc != null) { try { doc.Close(0); } catch {} }
-                Release((object)doc);
-                if (temp != null) { try { File.Delete(temp); } catch {} }
+                try { File.Delete(temp); } catch {}
             }
         }
 
-        public void Dispose()
+        private void Reset()
         {
             if (word != null) { try { word.Quit(0); } catch {} }
             Release((object)docs); Release((object)options); Release((object)word);
             docs = null; options = null; word = null;
         }
+
+        public void Dispose()
+        {
+            if (disposed) return;
+            disposed = true;
+            Reset();
+        }
+    }
+
+    // Lightweight Word substitutes used only by --self-test; they never start Word.
+    public sealed class TestWord
+    {
+        public bool Visible { get; set; }
+        public int DisplayAlerts { get; set; }
+        public int AutomationSecurity { get; set; }
+        public TestOptions Options { get; private set; }
+        public TestDocuments Documents { get; private set; }
+        public bool WasQuit { get; private set; }
+        public TestWord(bool fail) { Options = new TestOptions(); Documents = new TestDocuments(fail); }
+        public void Quit(int save) { WasQuit = true; }
+    }
+    public sealed class TestOptions { public bool UpdateLinksAtOpen { get; set; } }
+    public sealed class TestDocuments
+    {
+        private readonly bool fail;
+        public TestDocuments(bool fail) { this.fail = fail; }
+        public TestDocument Open(string FileName, bool ConfirmConversions, bool ReadOnly, bool AddToRecentFiles,
+            string PasswordDocument, bool Revert, bool Visible, bool OpenAndRepair, bool NoEncodingDialog)
+        { return new TestDocument(fail); }
+    }
+    public sealed class TestDocument
+    {
+        private readonly bool fail;
+        public TestDocument(bool fail) { this.fail = fail; }
+        public void ExportAsFixedFormat(string path, int format)
+        {
+            if (fail) throw new InvalidOperationException("Simulated Word error");
+            File.WriteAllText(path, "test pdf");
+        }
+        public void Close(int save) { }
     }
 
     private sealed class ProgressWindow : Form
@@ -200,7 +260,7 @@ internal static class Converter
                 foreach (string file in work.GetConsumingEnumerable()) {
                     string error = null;
                     try { session.ConvertFile(file); }
-                    catch (Exception ex) { error = ex.Message; session.Dispose(); }
+                    catch (Exception ex) { error = ex.Message; }
                     string result = error;
                     BeginInvoke((Action)delegate {
                         completed++; working = false;
@@ -238,6 +298,25 @@ internal static class Converter
             try { GetTarget(new[] { other }); return 1; } catch (ArgumentException) { }
             File.WriteAllText(Path.ChangeExtension(doc, ".pdf"), "existing");
             try { GetTarget(new[] { doc }); return 1; } catch (IOException) { }
+            // A file validation error must preserve a healthy Word session; a Word error
+            // must reset it, and the next document must use a new session.
+            string one = Path.Combine(dir, "one.docx");
+            string two = Path.Combine(dir, "two.docx");
+            string three = Path.Combine(dir, "three.docx");
+            File.WriteAllText(one, "test"); File.WriteAllText(two, "test"); File.WriteAllText(three, "test");
+            var instances = new List<TestWord>();
+            var session = new WordSession(delegate { var w = new TestWord(instances.Count == 0); instances.Add(w); return w; });
+            try { session.ConvertFile(one); return 1; } catch (InvalidOperationException) { }
+            if (instances.Count != 1 || !instances[0].WasQuit) return 1;
+            session.ConvertFile(two);
+            if (instances.Count != 2 || instances[1].WasQuit || !File.Exists(Path.ChangeExtension(two, ".pdf"))) return 1;
+            try { session.ConvertFile(two); return 1; } catch (IOException) { }
+            if (instances.Count != 2 || instances[1].WasQuit) return 1;
+            session.ConvertFile(three);
+            if (instances.Count != 2 || !File.Exists(Path.ChangeExtension(three, ".pdf"))) return 1;
+            session.Dispose(); session.Dispose();
+            if (!instances[1].WasQuit) return 1;
+            try { session.ConvertFile(one); return 1; } catch (ObjectDisposedException) { }
             return 0;
         } catch { return 1; }
         finally { try { Directory.Delete(dir, true); } catch {} }

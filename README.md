@@ -4,7 +4,7 @@ A Windows context-menu utility for converting Word documents to PDF using Micros
 
 ## Installation
 
-Download `DOCX-to-PDF-Setup-2.1.0.exe` from the [latest release](https://github.com/kevinfedak/DOCX-to-PDF-Converter/releases/latest) and run it. Installation requires administrator rights and desktop Microsoft Word for Windows. The installer updates earlier versions. It is not digitally signed, so Windows displays an unknown publisher warning.
+Download `DOCX-to-PDF-Setup-2.1.1.exe` from the [latest release](https://github.com/kevinfedak/DOCX-to-PDF-Converter/releases/latest) and run it. Installation requires administrator rights and desktop Microsoft Word for Windows. The installer updates earlier versions. It is not digitally signed, so Windows displays an unknown publisher warning.
 
 ## Use
 

@@ -31,7 +31,7 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
-          $p = Start-Process "$pwd\dist\DOCX-to-PDF-Setup-2.1.0.exe" -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART' -Wait -PassThru
+          $p = Start-Process "$pwd\dist\DOCX-to-PDF-Setup-2.1.1.exe" -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART' -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw 'Install failed' }
           $app = Join-Path $env:ProgramFiles 'DOCX to PDF Converter\WordPdfConverter.exe'
           if ((Get-FileHash $app).Hash -ne (Get-FileHash .\WordPdfConverter.exe).Hash) { throw 'Hash mismatch' }
@@ -47,6 +47,6 @@ jobs:
           if ($p.ExitCode -ne 0) { throw 'Self test failed' }
       - uses: actions/upload-artifact@v4
         with:
-          name: DOCX-to-PDF-Setup-2.1.0
-          path: dist/DOCX-to-PDF-Setup-2.1.0.exe
+          name: DOCX-to-PDF-Setup-2.1.1
+          path: dist/DOCX-to-PDF-Setup-2.1.1.exe
           if-no-files-found: error
