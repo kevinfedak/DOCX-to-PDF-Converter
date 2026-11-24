@@ -31,7 +31,7 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
-          $p = Start-Process "$pwd\dist\DOCX-to-PDF-Setup-2.1.1.exe" -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART' -Wait -PassThru
+          $p = Start-Process "$pwd\dist\DOCX-to-PDF-Setup-2.1.2.exe" -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART' -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw 'Install failed' }
           $app = Join-Path $env:ProgramFiles 'DOCX to PDF Converter\WordPdfConverter.exe'
           if ((Get-FileHash $app).Hash -ne (Get-FileHash .\WordPdfConverter.exe).Hash) { throw 'Hash mismatch' }
@@ -40,13 +40,13 @@ jobs:
             if ((Get-Item "$key\KevinWordPdf\command").GetValue('') -ne ('"' + $app + '" "%1"')) { throw 'Wrong command' }
             if ((Get-Item "$key\KevinWordPdf").GetValue('') -ne "Konwertuj do PDF") { throw "Wrong menu label" }
             if ((Get-Item "$key\KevinWordPdf").GetValue("Icon") -ne ($app + ",0")) { throw "Wrong menu icon" }
-            if ((Get-Item "$key\KevinWordPdf").GetValue("MultiSelectModel") -ne "Document") { throw "Wrong selection model" }
+            if ((Get-Item "$key\KevinWordPdf").GetValue("MultiSelectModel") -ne "Player") { throw "Wrong selection model" }
             if (Test-Path "$key\LocalDocxToPdf") { throw 'Legacy entry remains' }
           }
           $p = Start-Process $app -ArgumentList '--self-test' -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw 'Self test failed' }
       - uses: actions/upload-artifact@v4
         with:
-          name: DOCX-to-PDF-Setup-2.1.1
-          path: dist/DOCX-to-PDF-Setup-2.1.1.exe
+          name: DOCX-to-PDF-Setup-2.1.2
+          path: dist/DOCX-to-PDF-Setup-2.1.2.exe
           if-no-files-found: error
