@@ -28,4 +28,4 @@ try {
     if ($word) { try { $word.Quit(0) } catch {} ; [void][Runtime.InteropServices.Marshal]::ReleaseComObject($word) }
     if ($temp -and (Test-Path -LiteralPath $temp)) { Remove-Item -LiteralPath $temp -Force -ErrorAction SilentlyContinue }
 }
-if ($failed) { exit 1 }
+if ($failed) { exit 2 }
