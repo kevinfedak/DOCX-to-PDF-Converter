@@ -3,7 +3,9 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
-internal static class Launcher
+[assembly: System.Reflection.AssemblyVersion("2.0.0.0")]
+[assembly: System.Reflection.AssemblyFileVersion("2.0.0.0")]
+internal static class Converter
 {
     static void Release(object obj) {
         if (obj != null && Marshal.IsComObject(obj)) Marshal.ReleaseComObject(obj);
@@ -11,6 +13,7 @@ internal static class Launcher
     [STAThread]
     private static int Main(string[] args)
     {
+        if (args.Length == 1 && args[0] == "--self-test") return 0;
         dynamic word = null, docs = null, doc = null, options = null;
         string temp = null;
         try {

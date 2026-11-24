@@ -3,11 +3,6 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      publish_release:
-        description: Publish v1.0.3 as a prerelease
-        type: boolean
-        default: false
 permissions:
   contents: read
 jobs:
@@ -19,7 +14,7 @@ jobs:
         shell: powershell
         run: |
           $csc = "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
-          & $csc /nologo /codepage:65001 /target:winexe /reference:Microsoft.CSharp.dll /reference:System.Windows.Forms.dll /out:Launcher.exe Launcher.cs
+          & $csc /nologo /codepage:65001 /target:winexe /reference:Microsoft.CSharp.dll /reference:System.Windows.Forms.dll /out:WordPdfConverter.exe Converter.cs
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Compile installer
         shell: powershell
@@ -31,31 +26,23 @@ jobs:
           }
           & $compiler Setup.iss
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Verify installation
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $p = Start-Process "$pwd\dist\DOCX-to-PDF-Setup-2.0.0.exe" -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw 'Install failed' }
+          $app = Join-Path $env:ProgramFiles 'DOCX to PDF Converter\WordPdfConverter.exe'
+          if ((Get-FileHash $app).Hash -ne (Get-FileHash .\WordPdfConverter.exe).Hash) { throw 'Hash mismatch' }
+          foreach ($ext in '.doc','.docx') {
+            $key = "Registry::HKEY_LOCAL_MACHINE\Software\Classes\SystemFileAssociations\$ext\shell"
+            if ((Get-Item "$key\KevinWordPdf\command").GetValue('') -ne ('"' + $app + '" "%1"')) { throw 'Wrong command' }
+            if (Test-Path "$key\LocalDocxToPdf") { throw 'Legacy entry remains' }
+          }
+          $p = Start-Process $app -ArgumentList '--self-test' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw 'Self test failed' }
       - uses: actions/upload-artifact@v4
         with:
-          name: DOCX-to-PDF-Setup
-          path: dist/DOCX-to-PDF-Setup.exe
+          name: DOCX-to-PDF-Setup-2.0.0
+          path: dist/DOCX-to-PDF-Setup-2.0.0.exe
           if-no-files-found: error
-  release:
-    needs: build
-    if: github.event_name == 'workflow_dispatch' && inputs.publish_release && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: DOCX-to-PDF-Setup
-          path: dist
-      - name: Publish prerelease
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          RELEASE_COMMIT: ${{ github.sha }}
-        run: |
-          sha256sum dist/DOCX-to-PDF-Setup.exe | sed 's|dist/||' > dist/SHA256SUMS.txt
-          if gh release view v1.0.3 >/dev/null 2>&1; then
-            gh release upload v1.0.3 dist/DOCX-to-PDF-Setup.exe dist/SHA256SUMS.txt --clobber
-          else
-            gh release create v1.0.3 dist/DOCX-to-PDF-Setup.exe dist/SHA256SUMS.txt --target "$RELEASE_COMMIT" --title "DOCX to PDF Converter v1.0.3" --prerelease --notes "Unsigned test release with DOC and DOCX support and direct Word COM conversion without PowerShell. Requires desktop Microsoft Word. Word COM functional tests pending."
-          fi
