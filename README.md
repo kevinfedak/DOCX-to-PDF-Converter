@@ -10,6 +10,8 @@ Download `DOCX-to-PDF-Setup-2.1.2.exe` from the [latest release](https://github.
 
 Select DOC or DOCX files in Explorer, right-click and choose **Konwertuj do PDF**. On Windows 11, the command may appear under **Show more options**. Explorer normally supports up to 100 selected files for this menu entry. Files are processed sequentially in one Word session; the progress window shows results and errors. PDFs are saved next to their source documents. Existing PDFs are never overwritten.
 
+![Context menu with the Convert to PDF command highlighted](assets/context-menu.png)
+
 Uninstall the converter through Windows installed apps.
 
 ## Building and testing
