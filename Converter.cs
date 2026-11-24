@@ -155,6 +155,7 @@ internal static class Converter
             worker = new Thread(WorkLoop);
             worker.IsBackground = true; worker.SetApartmentState(ApartmentState.STA); worker.Start();
             Text = "Konwersja do PDF";
+            Icon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath);
             ClientSize = new Size(560, 300);
             MinimumSize = new Size(500, 320);
             StartPosition = FormStartPosition.CenterScreen;

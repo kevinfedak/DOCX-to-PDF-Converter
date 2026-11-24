@@ -1,9 +1,17 @@
-# DOCX to PDF Converter 2.1 beta
+# DOCX to PDF Converter
 
-Windows utility that adds **Konwertuj do PDF (2.1 beta)** to the context menu for DOC and DOCX files. It requires the desktop version of Microsoft Word for Windows and administrator rights to install. Select up to 15 documents in Explorer, right-click and choose the command; each document is converted in turn. For one document, use the same command; the PDF is created next to the original. An existing PDF is never overwritten. On Windows 11, the command may appear under “Show more options”.
+A Windows context-menu utility for converting Word documents to PDF using Microsoft Word.
 
-Download the test installer from the successful GitHub Actions run's artifacts. The installer replaces the earlier version and updates its context-menu entries. Uninstall it through Windows installed apps.
+## Installation
 
-The build checks installation, registry commands and input validation. The hosted CI runner does not include Word, so actual document conversion, formatting, password-protected documents and Word dialogs still need a manual test on a Windows machine with Word installed. Use copies of representative documents for the beta test.
+Download `DOCX-to-PDF-Setup-2.1.0.exe` from the [latest release](https://github.com/kevinfedak/DOCX-to-PDF-Converter/releases/latest) and run it. Installation requires administrator rights and desktop Microsoft Word for Windows. The installer updates earlier versions. It is not digitally signed, so Windows displays an unknown publisher warning.
 
-Explorer starts a separate converter process for each selected file. Conversions run one at a time in a shared Word session and progress window, which lists successes and errors. Larger selections can be converted in batches of up to 15. The installer is not digitally signed; Windows will show an unknown publisher until it is signed with a trusted code-signing certificate.
+## Use
+
+Select up to 15 DOC or DOCX files in Explorer, right-click and choose **Konwertuj do PDF**. On Windows 11, the command may appear under **Show more options**. Files are processed sequentially in one Word session; the progress window shows results and errors. PDFs are saved next to their source documents. Existing PDFs are never overwritten.
+
+Uninstall the converter through Windows installed apps.
+
+## Building and testing
+
+GitHub Actions builds the executable and installer on Windows and verifies installation, menu registration and input validation. The hosted runner does not include Word, so conversion requires a separate manual test on a Windows machine with Word installed.
