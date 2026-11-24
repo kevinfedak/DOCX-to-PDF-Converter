@@ -3,7 +3,7 @@
 Windows 10/11, desktop Microsoft Word required. Local conversion using Word COM in the interactive user's session. No application telemetry. Word's own network behavior and security policies remain applicable.
 
 ## Installation
-Download the EXE from Releases (or extract the artifact ZIP from Actions) and run it as administrator. On Windows 11 use Show more options. Right-click one DOC or DOCX and select Konwertuj do PDF. Existing PDFs are not overwritten. The installer is unsigned. PowerShell execution policy is not bypassed; sign the script if required by policy.
+Download the EXE from Releases (or extract the artifact ZIP from Actions) and run it as administrator. On Windows 11 use Show more options. Right-click one DOC or DOCX and select Konwertuj do PDF. Existing PDFs are not overwritten. The installer is unsigned.
 
 Silent install: `DOCX-to-PDF-Setup.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART`. Uninstall via Installed Apps or the installed uninstaller with the same switches.
 
@@ -15,6 +15,6 @@ Silent install: `DOCX-to-PDF-Setup.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART`
 - Verify macro security and enterprise policies; do not use untrusted documents for routine conversion.
 - Uninstall and verify menu and installed files are removed.
 
-CI validates PowerShell syntax and compiles the installer; it does not test Word COM.
+CI compiles the C# executable and installer; it does not test Word COM.
 
-Version 1.0.2 uses a GUI launcher to start PowerShell without a console window. Error dialogs remain visible. Verify on Windows 11 with Windows Terminal as the default terminal.
+Version 1.0.3 converts directly through Word COM in a C# Windows executable. No PowerShell runtime is required. Error dialogs remain visible.
