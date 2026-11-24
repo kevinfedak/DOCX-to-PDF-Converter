@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       publish_release:
-        description: Publish v1.0.1 as a prerelease
+        description: Publish v1.0.2 as a prerelease
         type: boolean
         default: false
 permissions:
@@ -22,6 +22,12 @@ jobs:
           $errors = $null
           [void][System.Management.Automation.Language.Parser]::ParseFile("$pwd\ConvertToPDF.ps1", [ref]$tokens, [ref]$errors)
           if ($errors.Count) { throw ($errors | Out-String) }
+      - name: Compile GUI launcher
+        shell: powershell
+        run: |
+          $csc = "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
+          & $csc /nologo /target:winexe /reference:System.Windows.Forms.dll /out:Launcher.exe Launcher.cs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Compile installer
         shell: powershell
         run: |
@@ -55,4 +61,4 @@ jobs:
           RELEASE_COMMIT: ${{ github.sha }}
         run: |
           sha256sum dist/DOCX-to-PDF-Setup.exe | sed 's|dist/||' > dist/SHA256SUMS.txt
-          gh release create v1.0.1 dist/DOCX-to-PDF-Setup.exe dist/SHA256SUMS.txt --target "$RELEASE_COMMIT" --title "DOCX to PDF Converter v1.0.1" --prerelease --notes "Unsigned test release with DOC and DOCX support. Requires desktop Microsoft Word. Word COM functional tests pending."
+          gh release create v1.0.2 dist/DOCX-to-PDF-Setup.exe dist/SHA256SUMS.txt --target "$RELEASE_COMMIT" --title "DOCX to PDF Converter v1.0.2" --prerelease --notes "Unsigned test release with DOC and DOCX support and a windowless GUI launcher. Requires desktop Microsoft Word. Word COM functional tests pending."
