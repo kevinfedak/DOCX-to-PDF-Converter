@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using System.Threading;
 
 [assembly: System.Reflection.AssemblyVersion("2.1.0.0")]
 [assembly: System.Reflection.AssemblyFileVersion("2.1.0.0")]
@@ -32,7 +33,13 @@ internal static class Converter
         if (args.Length == 1 && args[0] == "--self-test") return SelfTest();
         dynamic word = null, docs = null, doc = null, options = null;
         string temp = null;
+        Mutex conversionLock = null;
+        bool lockHeld = false;
         try {
+            // Explorer launches a separate process per selected file. Serialize Word automation.
+            conversionLock = new Mutex(false, @"Local\KevinWordPdfConversion");
+            try { conversionLock.WaitOne(); lockHeld = true; }
+            catch (AbandonedMutexException) { lockHeld = true; }
             string target = GetTarget(args);
             string file = Path.GetFullPath(args[0]);
             temp = Path.Combine(Path.GetDirectoryName(file), Guid.NewGuid().ToString() + ".pdf");
@@ -60,6 +67,8 @@ internal static class Converter
             if (word != null) { try { word.Quit(0); } catch {} }
             Release((object)doc); Release((object)docs); Release((object)options); Release((object)word);
             if (temp != null) { try { File.Delete(temp); } catch {} }
+            if (lockHeld) conversionLock.ReleaseMutex();
+            if (conversionLock != null) conversionLock.Dispose();
         }
     }
 
