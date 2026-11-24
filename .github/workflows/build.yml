@@ -54,4 +54,8 @@ jobs:
           RELEASE_COMMIT: ${{ github.sha }}
         run: |
           sha256sum dist/DOCX-to-PDF-Setup.exe | sed 's|dist/||' > dist/SHA256SUMS.txt
-          gh release create v1.0.3 dist/DOCX-to-PDF-Setup.exe dist/SHA256SUMS.txt --target "$RELEASE_COMMIT" --title "DOCX to PDF Converter v1.0.3" --prerelease --notes "Unsigned test release with DOC and DOCX support and direct Word COM conversion without PowerShell. Requires desktop Microsoft Word. Word COM functional tests pending."
+          if gh release view v1.0.3 >/dev/null 2>&1; then
+            gh release upload v1.0.3 dist/DOCX-to-PDF-Setup.exe dist/SHA256SUMS.txt --clobber
+          else
+            gh release create v1.0.3 dist/DOCX-to-PDF-Setup.exe dist/SHA256SUMS.txt --target "$RELEASE_COMMIT" --title "DOCX to PDF Converter v1.0.3" --prerelease --notes "Unsigned test release with DOC and DOCX support and direct Word COM conversion without PowerShell. Requires desktop Microsoft Word. Word COM functional tests pending."
+          fi
