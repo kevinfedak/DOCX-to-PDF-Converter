@@ -5,7 +5,7 @@ $temp = $null
 $failed = $false
 try {
     $source = Get-Item -LiteralPath $FilePath
-    if ($source.PSIsContainer -or $source.Extension -ne '.docx') { throw 'Wybierz plik DOCX.' }
+    if ($source.PSIsContainer -or $source.Extension -notin @('.doc', '.docx')) { throw 'Wybierz plik DOC lub DOCX.' }
     $target = [IO.Path]::ChangeExtension($source.FullName, '.pdf')
     if (Test-Path -LiteralPath $target) { throw 'Plik PDF już istnieje.' }
     $temp = Join-Path $source.DirectoryName ([guid]::NewGuid().ToString() + '.pdf')
