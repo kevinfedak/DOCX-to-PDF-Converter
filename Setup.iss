@@ -1,6 +1,8 @@
 ﻿[Setup]
 AppId=LocalDocxToPdfConverter
 AppName=DOCX to PDF Converter
+AppPublisher=Kevin Fedak
+VersionInfoCompany=Kevin Fedak
 AppVersion=1.0.2
 DefaultDirName={autopf}\DOCX to PDF Converter
 DisableProgramGroupPage=yes
