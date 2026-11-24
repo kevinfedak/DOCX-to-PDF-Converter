@@ -3,6 +3,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      publish_release:
+        description: Publish v1.0.0 as a prerelease
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -32,3 +37,22 @@ jobs:
           name: DOCX-to-PDF-Setup
           path: dist/DOCX-to-PDF-Setup.exe
           if-no-files-found: error
+  release:
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_release && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: DOCX-to-PDF-Setup
+          path: dist
+      - name: Publish prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: |
+          sha256sum dist/DOCX-to-PDF-Setup.exe | sed 's|dist/||' > dist/SHA256SUMS.txt
+          gh release create v1.0.0 dist/DOCX-to-PDF-Setup.exe dist/SHA256SUMS.txt --target "$RELEASE_COMMIT" --title "DOCX to PDF Converter v1.0.0" --prerelease --notes "Unsigned test release. Requires desktop Microsoft Word. Word COM functional tests pending."
