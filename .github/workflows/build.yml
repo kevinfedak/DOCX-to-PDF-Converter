@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       publish_release:
-        description: Publish v1.0.0 as a prerelease
+        description: Publish v1.0.1 as a prerelease
         type: boolean
         default: false
 permissions:
@@ -55,4 +55,4 @@ jobs:
           RELEASE_COMMIT: ${{ github.sha }}
         run: |
           sha256sum dist/DOCX-to-PDF-Setup.exe | sed 's|dist/||' > dist/SHA256SUMS.txt
-          gh release create v1.0.0 dist/DOCX-to-PDF-Setup.exe dist/SHA256SUMS.txt --target "$RELEASE_COMMIT" --title "DOCX to PDF Converter v1.0.0" --prerelease --notes "Unsigned test release. Requires desktop Microsoft Word. Word COM functional tests pending."
+          gh release create v1.0.1 dist/DOCX-to-PDF-Setup.exe dist/SHA256SUMS.txt --target "$RELEASE_COMMIT" --title "DOCX to PDF Converter v1.0.1" --prerelease --notes "Unsigned test release with DOC and DOCX support. Requires desktop Microsoft Word. Word COM functional tests pending."
